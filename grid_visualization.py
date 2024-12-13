@@ -187,11 +187,11 @@ class GridVisualization:
         
         # Создаем интерфейс всплывающего окна
         # Создаем заголовок с возможностью перетаскивания
-        title_frame = tk.Frame(self.popup, bg='#e1e1e1', height=30, cursor='fleur')
+        title_frame = tk.Frame(self.popup, bg='#e1e1e1', height=30)
         title_frame.pack(fill='x', side='top')
         title_frame.pack_propagate(False)
         
-        title_label = tk.Label(title_frame, text="Меню", bg='#e1e1e1', font=('Arial', 10, 'bold'), cursor='fleur')
+        title_label = tk.Label(title_frame, text="Меню", bg='#e1e1e1', font=('Arial', 10, 'bold'))
         title_label.pack(side='left', padx=10)
         
         # Добавляем обработчики перетаскивания окна
