@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 
 class GridVisualization:
     def __init__(self, size):
@@ -127,7 +128,7 @@ class GridVisualization:
             self.draw_grid()
         
         # Планируем следующий кадр анимации
-        self.window.after(8, self.animate_zoom)  # примерно 60 FPS
+        self.window.after(8, self.animate_zoom)  # примерно 120 FPS
         
     def run(self):
         self.window.mainloop()
@@ -140,25 +141,66 @@ class GridVisualization:
 
     def show_popup(self):
         # Создаем полупрозрачный затемняющий фон
-        self.overlay = tk.Canvas(self.window)
-        self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
-        self.overlay.configure(bg='black')
-        # Устанавливаем прозрачность через создание прямоугольника
-        self.overlay.create_rectangle(0, 0, 10000, 10000, fill='black', stipple='gray50')
+        self.overlay = tk.Toplevel(self.window)
+        self.overlay.overrideredirect(True)  # Убираем заголовок окна
+        self.overlay.attributes('-topmost', True)  # Держим оверлей поверх всех окон
+        
+        # Получаем координаты и размеры основного окна
+        x = self.window.winfo_rootx()
+        y = self.window.winfo_rooty()
+        width = self.window.winfo_width()
+        height = self.window.winfo_height()
+        
+        # Устанавливаем положение и размер оверлея точно по размеру основного окна
+        self.overlay.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Создаем черный фон с прозрачностью
+        overlay_canvas = tk.Canvas(self.overlay, highlightthickness=0, bg='black')
+        overlay_canvas.pack(fill='both', expand=True)
+        self.overlay.attributes('-alpha', 0.5)  # Устанавливаем прозрачность
+        
         # Добавляем обработчик клика по затемненной области
-        self.overlay.bind("<Button-1>", lambda e: self.close_popup())
+        overlay_canvas.bind("<Button-1>", lambda e: self.close_popup())
+        
+        # Обновляем положение оверлея при перемещении основного окна
+        def update_overlay_position(event=None):
+            if hasattr(self, 'overlay') and self.overlay.winfo_exists():
+                x = self.window.winfo_rootx()
+                y = self.window.winfo_rooty()
+                width = self.window.winfo_width()
+                height = self.window.winfo_height()
+                self.overlay.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Привязываем обновление позиции к событиям перемещения и изменения размера окна
+        self.window.bind('<Configure>', lambda e: (update_overlay_position(), self.update_popup_position()))
 
         # Создаем всплывающее окно
-        self.popup = tk.Frame(self.window, bg='white', bd=2, relief='raised')
-        self.popup.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.4, relheight=0.3)
-
-        # Создаем заголовок всплывающего окна
-        title_frame = tk.Frame(self.popup, bg='#e1e1e1', height=30)
+        self.popup = tk.Toplevel(self.window)
+        self.popup.withdraw()  # Скрываем окно на время настройки
+        self.popup.transient(self.window)
+        self.popup.attributes('-topmost', True)  # Держим окно поверх всех окон
+        self.popup.overrideredirect(True)  # Убираем стандартное оформление окна
+        self.popup.configure(bg='white')
+        
+        # Устанавливаем начальное положение окна
+        self.update_popup_position()
+        
+        # Создаем интерфейс всплывающего окна
+        # Создаем заголовок с возможностью перетаскивания
+        title_frame = tk.Frame(self.popup, bg='#e1e1e1', height=30, cursor='fleur')
         title_frame.pack(fill='x', side='top')
         title_frame.pack_propagate(False)
         
-        title_label = tk.Label(title_frame, text="Меню", bg='#e1e1e1', font=('Arial', 10, 'bold'))
+        title_label = tk.Label(title_frame, text="Меню", bg='#e1e1e1', font=('Arial', 10, 'bold'), cursor='fleur')
         title_label.pack(side='left', padx=10)
+        
+        # Добавляем обработчики перетаскивания окна
+        title_frame.bind('<Button-1>', self.start_window_drag)
+        title_frame.bind('<B1-Motion>', self.window_drag)
+        title_frame.bind('<ButtonRelease-1>', self.stop_window_drag)
+        title_label.bind('<Button-1>', self.start_window_drag)
+        title_label.bind('<B1-Motion>', self.window_drag)
+        title_label.bind('<ButtonRelease-1>', self.stop_window_drag)
         
         # Добавляем кнопку закрытия в заголовок
         close_button = tk.Button(title_frame, text="×", 
@@ -198,7 +240,12 @@ class GridVisualization:
                             font=('Arial', 8))
         hint_label.pack(side='bottom', pady=(0, 5))
 
-        self.popup_visible = True
+        # После создания всего интерфейса показываем окно
+        self.window.after(100, lambda: (
+            self.popup.deiconify(),  # Показываем окно
+            self.popup.lift(),  # Поднимаем окно поверх всех остальных
+            setattr(self, 'popup_visible', True)
+        ))
 
     def close_popup(self):
         if hasattr(self, 'overlay'):
@@ -206,6 +253,33 @@ class GridVisualization:
         if hasattr(self, 'popup'):
             self.popup.destroy()
         self.popup_visible = False
+
+    def start_window_drag(self, event):
+        self._drag_start_x = event.x_root - self.popup.winfo_x()
+        self._drag_start_y = event.y_root - self.popup.winfo_y()
+
+    def window_drag(self, event):
+        if hasattr(self, '_drag_start_x'):
+            x = event.x_root - self._drag_start_x
+            y = event.y_root - self._drag_start_y
+            self.popup.geometry(f"+{x}+{y}")
+            
+    def stop_window_drag(self, event):
+        if hasattr(self, '_drag_start_x'):
+            delattr(self, '_drag_start_x')
+            delattr(self, '_drag_start_y')
+
+    def update_popup_position(self):
+        if hasattr(self, 'popup') and self.popup.winfo_exists():
+            x = self.window.winfo_rootx()
+            y = self.window.winfo_rooty()
+            width = self.window.winfo_width()
+            height = self.window.winfo_height()
+            popup_width = int(width * 0.4)
+            popup_height = int(height * 0.3)
+            popup_x = x + (width - popup_width) // 2
+            popup_y = y + (height - popup_height) // 2
+            self.popup.geometry(f"{popup_width}x{popup_height}+{popup_x}+{popup_y}")
 
     def open_settings(self):
         self.close_popup()  # Закрываем всплывающее окно
