@@ -20,11 +20,11 @@ class GridVisualization:
         # Параметры масштабирования
         self.scale = 1.0
         self.target_scale = 1.0
-        self.min_scale = 0.25
+        self.min_scale = 1.0
         self.max_scale = 10.0
         self.cell_base_size = 20
-        self.zoom_smoothness = 0.15  # Коэффициент плавности зума
-        self.zoom_speed = 0.1  # Коэффициент скорости масштабирования (0.1 = медленно, 0.5 = быстро)
+        self.zoom_smoothness = 0.085  # Коэффициент плавности зума
+        self.zoom_speed = 0.4  # Коэффициент скорости масштабирования (0.1 = медленно, 0.5 = быстро)
         self.dragging = False  # Инициализируем состояние перетаскивания
         
         # Привязываем обработчик изменения размера окна
