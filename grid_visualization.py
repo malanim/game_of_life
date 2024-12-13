@@ -8,13 +8,10 @@ class GridVisualization:
         self.target_camera_x = 0
         self.target_camera_y = 0
         self.window = tk.Tk()
-        self.window.title("Game of Life")
+        self.window.title("Game of Life (F1 - открыть меню)")
         
-        # Создаем верхнюю панель с кнопкой настроек
-        self.toolbar = tk.Frame(self.window)
-        self.toolbar.pack(side=tk.TOP, fill=tk.X)
-        self.settings_button = tk.Button(self.toolbar, text="Настройки", command=self.open_settings)
-        self.settings_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        # Флаг для отслеживания состояния всплывающего окна
+        self.popup_visible = False
         
         self.canvas = tk.Canvas(self.window, width=size*20, height=size*20)
         self.canvas.pack(fill=tk.BOTH, expand=True)
@@ -33,13 +30,15 @@ class GridVisualization:
         self.window.bind("<Configure>", self.on_window_resize)
         self.draw_grid()
         
-        # Bind mouse events
+        # Bind mouse events and keyboard
         self.canvas.bind("<ButtonPress-1>", self.start_drag)
         self.canvas.bind("<B1-Motion>", self.drag)
         self.canvas.bind("<ButtonRelease-1>", self.stop_drag)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)  # Windows
         self.canvas.bind("<Button-4>", self.on_mouse_wheel)    # Linux up
         self.canvas.bind("<Button-5>", self.on_mouse_wheel)    # Linux down
+        self.window.bind("<F1>", self.toggle_popup)  # Добавляем обработку F1
+        self.window.bind("<Escape>", lambda e: self.close_popup() if self.popup_visible else None)  # Закрытие по Escape
         
         # Анимация масштабирования
         self.animate_zoom()
@@ -128,12 +127,88 @@ class GridVisualization:
             self.draw_grid()
         
         # Планируем следующий кадр анимации
-        self.window.after(16, self.animate_zoom)  # примерно 60 FPS
+        self.window.after(8, self.animate_zoom)  # примерно 60 FPS
         
     def run(self):
         self.window.mainloop()
 
+    def toggle_popup(self, event=None):
+        if self.popup_visible:
+            self.close_popup()
+        else:
+            self.show_popup()
+
+    def show_popup(self):
+        # Создаем полупрозрачный затемняющий фон
+        self.overlay = tk.Canvas(self.window)
+        self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.overlay.configure(bg='black')
+        # Устанавливаем прозрачность через создание прямоугольника
+        self.overlay.create_rectangle(0, 0, 10000, 10000, fill='black', stipple='gray50')
+        # Добавляем обработчик клика по затемненной области
+        self.overlay.bind("<Button-1>", lambda e: self.close_popup())
+
+        # Создаем всплывающее окно
+        self.popup = tk.Frame(self.window, bg='white', bd=2, relief='raised')
+        self.popup.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.4, relheight=0.3)
+
+        # Создаем заголовок всплывающего окна
+        title_frame = tk.Frame(self.popup, bg='#e1e1e1', height=30)
+        title_frame.pack(fill='x', side='top')
+        title_frame.pack_propagate(False)
+        
+        title_label = tk.Label(title_frame, text="Меню", bg='#e1e1e1', font=('Arial', 10, 'bold'))
+        title_label.pack(side='left', padx=10)
+        
+        # Добавляем кнопку закрытия в заголовок
+        close_button = tk.Button(title_frame, text="×", 
+                               command=self.close_popup,
+                               font=('Arial', 12),
+                               bg='#e1e1e1',
+                               relief='flat',
+                               width=2,
+                               highlightthickness=0,
+                               bd=0,
+                               activebackground='#ff5555',  # Цвет при наведении
+                               cursor='hand2')  # Курсор в виде руки при наведении
+        close_button.pack(side='right', padx=5)
+        
+        # Добавляем кнопку настроек во всплывающее окно
+        content_frame = tk.Frame(self.popup, bg='white')
+        content_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        settings_button = tk.Button(content_frame, text="Настройки", 
+                                  command=self.open_settings,
+                                  relief='flat',
+                                  bg='#4a90e2',
+                                  fg='white',
+                                  activebackground='#357abd',
+                                  activeforeground='white',
+                                  width=20,
+                                  cursor='hand2',
+                                  font=('Arial', 10),
+                                  pady=8)
+        settings_button.pack(pady=10)
+        
+        # Добавляем подсказку внизу окна
+        hint_label = tk.Label(content_frame, 
+                            text="ESC или клик вне окна для закрытия",
+                            bg='white',
+                            fg='#666666',
+                            font=('Arial', 8))
+        hint_label.pack(side='bottom', pady=(0, 5))
+
+        self.popup_visible = True
+
+    def close_popup(self):
+        if hasattr(self, 'overlay'):
+            self.overlay.destroy()
+        if hasattr(self, 'popup'):
+            self.popup.destroy()
+        self.popup_visible = False
+
     def open_settings(self):
+        self.close_popup()  # Закрываем всплывающее окно
         # Создаем новое окно настроек
         settings_window = tk.Toplevel(self.window)
         settings_window.title("Настройки масштабирования")
