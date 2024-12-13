@@ -55,15 +55,17 @@ class GridVisualization:
         
         # Рисуем сетку с учетом текущих размеров и масштаба
         for i in range(self.size):
+            # Заворачиваем координаты для бесконечного поля
+            wrapped_x = (i * cell_size - self.camera_x) % (self.size * cell_size)
+            wrapped_y = (i * cell_size - self.camera_y) % (self.size * cell_size)
+            
             # Vertical lines
-            x_pos = i * cell_size - self.camera_x
-            self.canvas.create_line(x_pos, 0, 
-                                  x_pos, canvas_height, 
+            self.canvas.create_line(wrapped_x, 0, 
+                                  wrapped_x, canvas_height, 
                                   fill="gray")
             # Horizontal lines
-            y_pos = i * cell_size - self.camera_y
-            self.canvas.create_line(0, y_pos, 
-                                  canvas_width, y_pos, 
+            self.canvas.create_line(0, wrapped_y, 
+                                  canvas_width, wrapped_y, 
                                   fill="gray")
 
     def start_drag(self, event):
