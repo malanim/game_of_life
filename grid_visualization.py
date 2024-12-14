@@ -6,6 +6,7 @@ class GridVisualization:
         self.size = size
         self.camera_x = 0
         self.camera_y = 0
+        self.cell_colors = [[None for _ in range(size)] for _ in range(size)]  # Инициализация массива цветов
         self.target_camera_x = 0
         self.target_camera_y = 0
         self.window = tk.Tk()
@@ -46,6 +47,13 @@ class GridVisualization:
         # Анимация масштабирования
         self.animate_zoom()
 
+    def set_cell_colors(self, colors):
+        """Установка цветов для ячеек сетки"""
+        if len(colors) != self.size or any(len(row) != self.size for row in colors):
+            raise ValueError(f"Размер массива цветов должен быть {self.size}x{self.size}")
+        self.cell_colors = colors
+        self.draw_grid()
+
     def draw_grid(self):
         self.canvas.delete("all")  # Clear the canvas
         # Получаем текущие размеры canvas
@@ -55,7 +63,23 @@ class GridVisualization:
         # Текущий размер ячейки с учетом масштаба
         cell_size = self.cell_base_size * self.scale
         
-        # Рисуем сетку с учетом текущих размеров и масштаба
+        # Сначала рисуем цветные ячейки
+        for i in range(self.size):
+            for j in range(self.size):
+                # Заворачиваем координаты для бесконечного поля
+                wrapped_x = (i * cell_size - self.camera_x) % (self.size * cell_size)
+                wrapped_y = (j * cell_size - self.camera_y) % (self.size * cell_size)
+                
+                # Если для ячейки задан цвет, рисуем её
+                if self.cell_colors[j][i] is not None:
+                    self.canvas.create_rectangle(
+                        wrapped_x, wrapped_y,
+                        wrapped_x + cell_size, wrapped_y + cell_size,
+                        fill=self.cell_colors[j][i],
+                        outline=""
+                    )
+        
+        # Затем рисуем линии сетки поверх ячеек
         for i in range(self.size):
             # Заворачиваем координаты для бесконечного поля
             wrapped_x = (i * cell_size - self.camera_x) % (self.size * cell_size)
@@ -307,6 +331,33 @@ class GridVisualization:
         slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0))
 
 if __name__ == "__main__":
-    grid_size = 32  # Size of the grid
+    import random
+
+    # Определяем набор доступных цветов
+    available_colors = [
+        "#FF0000",  # красный
+        "#00FF00",  # зеленый
+        "#0000FF",  # синий
+        "#FFFF00",  # желтый
+        "#FF00FF",  # пурпурный
+        "#00FFFF",  # голубой
+        None        # прозрачный
+    ]
+    
+    # Создаем сетку размером grid_size
+    grid_size = 16
     visualization = GridVisualization(grid_size)
+    
+    # Создаем массив случайных цветов для ячеек
+    colors = []
+    for i in range(grid_size):
+        row = []
+        for j in range(grid_size):
+            row.append(random.choice(available_colors))
+        colors.append(row)
+    
+    # Устанавливаем цвета ячеек
+    visualization.set_cell_colors(colors)
+    
+    # Запускаем визуализацию
     visualization.run()
