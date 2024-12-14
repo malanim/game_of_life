@@ -64,23 +64,52 @@ class GridVisualization:
         cell_size = self.cell_base_size * self.scale
         
         # Сначала рисуем цветные ячейки
-        for i in range(self.size):
-            for j in range(self.size):
+        # Добавляем дополнительный ряд ячеек слева и сверху для плавного перехода
+        for i in range(-1, self.size):
+            for j in range(-1, self.size):
                 # Заворачиваем координаты для бесконечного поля
+                wrapped_i = i % self.size
+                wrapped_j = j % self.size
                 wrapped_x = (i * cell_size - self.camera_x) % (self.size * cell_size)
                 wrapped_y = (j * cell_size - self.camera_y) % (self.size * cell_size)
                 
                 # Если для ячейки задан цвет, рисуем её
-                if self.cell_colors[j][i] is not None:
+                if self.cell_colors[wrapped_j][wrapped_i] is not None:
+                    # Рисуем основную ячейку
                     self.canvas.create_rectangle(
                         wrapped_x, wrapped_y,
                         wrapped_x + cell_size, wrapped_y + cell_size,
-                        fill=self.cell_colors[j][i],
+                        fill=self.cell_colors[wrapped_j][wrapped_i],
                         outline=""
                     )
+                    
+                    # Дублируем ячейки на границах для плавного перехода
+                    if wrapped_x + cell_size > self.size * cell_size:
+                        self.canvas.create_rectangle(
+                            wrapped_x - self.size * cell_size, wrapped_y,
+                            wrapped_x - self.size * cell_size + cell_size, wrapped_y + cell_size,
+                            fill=self.cell_colors[wrapped_j][wrapped_i],
+                            outline=""
+                        )
+                        # Добавляем дублирование для левого верхнего угла
+                        if wrapped_y + cell_size > self.size * cell_size:
+                            self.canvas.create_rectangle(
+                                wrapped_x - self.size * cell_size, wrapped_y - self.size * cell_size,
+                                wrapped_x - self.size * cell_size + cell_size, wrapped_y - self.size * cell_size + cell_size,
+                                fill=self.cell_colors[wrapped_j][wrapped_i],
+                                outline=""
+                            )
+                    if wrapped_y + cell_size > self.size * cell_size:
+                        self.canvas.create_rectangle(
+                            wrapped_x, wrapped_y - self.size * cell_size,
+                            wrapped_x + cell_size, wrapped_y - self.size * cell_size + cell_size,
+                            fill=self.cell_colors[wrapped_j][wrapped_i],
+                            outline=""
+                        )
         
         # Затем рисуем линии сетки поверх ячеек
-        for i in range(self.size):
+        # Добавляем дополнительные линии для плавного перехода
+        for i in range(-1, self.size + 1):
             # Заворачиваем координаты для бесконечного поля
             wrapped_x = (i * cell_size - self.camera_x) % (self.size * cell_size)
             wrapped_y = (i * cell_size - self.camera_y) % (self.size * cell_size)
