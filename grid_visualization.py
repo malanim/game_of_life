@@ -14,7 +14,10 @@ class GridVisualization:
         # Флаг для отслеживания состояния всплывающего окна
         self.popup_visible = False
         
-        self.canvas = tk.Canvas(self.window, width=size*20, height=size*20)
+        # Размер одной ячейки
+        self.cell_base_size = 20
+
+        self.canvas = tk.Canvas(self.window, width=size*self.cell_base_size, height=size*self.cell_base_size)
         self.canvas.pack(fill=tk.BOTH, expand=True)
         
         # Параметры масштабирования
@@ -22,7 +25,6 @@ class GridVisualization:
         self.target_scale = 1.0
         self.min_scale = 1.0
         self.max_scale = 10.0
-        self.cell_base_size = 20
         self.zoom_smoothness = 0.085  # Коэффициент плавности зума
         self.zoom_speed = 0.4  # Коэффициент скорости масштабирования (0.1 = медленно, 0.5 = быстро)
         self.dragging = False  # Инициализируем состояние перетаскивания
